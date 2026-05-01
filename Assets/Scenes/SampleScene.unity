@@ -400,10 +400,12 @@ MonoBehaviour:
   tanks:
   - aceleration: 30
     position: {x: 0, y: 0}
+    fallSpeed: 0
     velocity: {x: 0, y: 0}
     size: {x: 1, y: 1}
   - aceleration: 30
     position: {x: 1.46, y: 0}
+    fallSpeed: 0
     velocity: {x: 0, y: 0}
     size: {x: 1, y: 1}
   walls:
