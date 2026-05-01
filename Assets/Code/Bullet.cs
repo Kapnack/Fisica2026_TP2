@@ -10,7 +10,7 @@ public class Bullet
     [SerializeField] private float restitution = 0.8f;
     [SerializeField] private float mass = 1f;
     [SerializeField] private float friction = 0.3f;
-
+    private float fallSpeed;
     public Vector2 Position => position;
     public float Radius => radius;
 
@@ -18,10 +18,11 @@ public class Bullet
 
     public void Integrate(float deltaTime, float gravity)
     {
-        var affectByGravity = (Vector2.down * gravity) * deltaTime;
+        fallSpeed += gravity * Time.deltaTime;
 
-        position += (velocity + Vector2.down * gravity) * affectByGravity * deltaTime;
-        velocity -= affectByGravity;
+        Vector2 verticalVelocity = Vector2.down * fallSpeed;
+
+        position += (velocity + verticalVelocity) * Time.deltaTime;
     }
 
     public void CheckWallCollision(Wall wall)
