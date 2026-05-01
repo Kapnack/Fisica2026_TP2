@@ -16,7 +16,12 @@ namespace Assets.Code
             float deltaTime = Time.deltaTime;
 
             foreach (Tank tank in tanks)
+            {
                 tank.CheckInput(deltaTime);
+
+                tank.Integrate(deltaTime, Gravity);
+            }
+
 
             foreach (Bullet bullet in bullets)
             {
