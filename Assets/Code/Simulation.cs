@@ -45,7 +45,7 @@ namespace Assets.Code
                     tank.CheckWallCollision(wall);
                 }
 
-                predictedPoints.Add(PredictHitPoint(tank.CannonTipPosition + tank.CanionDir * radius, tank.canionForce, tank.CanionDir, walls, bullets, tanks, Gravity, predictionMaxTime, deltaTime));
+                predictedPoints.Add(PredictHitPoint(tank.CannonTipPosition + tank.CanionDir * radius, tank.canionForce, tank.CanionDir, Gravity, predictionMaxTime, deltaTime));
 
                 if (tank.shoot)
                 {
@@ -87,7 +87,7 @@ namespace Assets.Code
             bulletsToRemove.Clear();
         }
 
-        public Vector2 PredictHitPoint(Vector2 sartingPos, float aceleration, Vector2 dir, Wall[] walls, List<Bullet> bullets, Tank[] tanks, float gravity, float predictionMaxTime, float deltaTime)
+        public Vector2 PredictHitPoint(Vector2 sartingPos, float aceleration, Vector2 dir, float gravity, float predictionMaxTime, float deltaTime)
         {
             Bullet sim = new Bullet();
             float time = 0f;
