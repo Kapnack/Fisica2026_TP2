@@ -66,7 +66,7 @@ public class Bullet
 
     public void CheckWallCollision(Wall wall)
     {
-        if (DoSegmentCollide(previousPosition, Position, wall.pointA, wall.pointB, out Vector2 intersectPoint))
+        if (Physics.Math.DoSegmentCollide(previousPosition, Position, wall.pointA, wall.pointB, out Vector2 intersectPoint))
         {
             Vector2 wallDir = (wall.pointB - wall.pointA).normalized;
             Vector2 normal = new Vector2(-wallDir.y, wallDir.x);
@@ -94,32 +94,6 @@ public class Bullet
             ResolveWallOverlap(closestPointToWall, normal, minDist);
             velocity = Reflect(velocity, normal, restitution);
         }
-    }
-
-    public bool DoSegmentCollide(Vector2 point1A, Vector2 point1B, Vector2 point2A, Vector2 point2B, out Vector2 intersectPoint)
-    {
-        intersectPoint = Vector2.zero;
-        Vector2 seg1Dir = point1B - point1A;
-        Vector2 seg2Dir = point2B - point2A;
-        Vector2 vectorAtoA = point1A - point2B;
-
-        float commonDeterminant = Physics.Math.Cross(seg1Dir, seg2Dir);
-
-        if (Mathf.Abs(commonDeterminant) < float.Epsilon)
-            return false;
-
-        float detX = Physics.Math.Cross(seg2Dir, vectorAtoA) / commonDeterminant;
-        float detY = Physics.Math.Cross(seg1Dir, vectorAtoA) / commonDeterminant;
-
-        bool isThereIntersection = (detX >= 0 && detX <= 1 &&
-                                    detY >= 0 && detY <= 1);
-
-        intersectPoint = isThereIntersection ? new Vector2(
-            point1A.x + (detX * (point1B.x - point1A.x)),
-            point1A.y + (detX * (point1B.y - point1A.y))
-            ) : Vector2.zero;
-
-        return isThereIntersection;
     }
 
     public Vector2 GetClosestPointOnWall(Wall wall)
