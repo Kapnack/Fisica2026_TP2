@@ -2,15 +2,16 @@
 using UnityEngine;
 
 [Serializable]
-public class Tank
+public abstract class Tank
 {
     [Header("Movement")]
-    [SerializeField] private float acceleration = 30.0f;
+    [SerializeField] protected float acceleration = 30.0f;
     [SerializeField] private Vector2 position;
-    [SerializeField] private Vector2 velocity;
+    [SerializeField] protected Vector2 velocity;
+    [SerializeField] private float maxSlopeAngle = 45f;
 
     [Header("Dimensions")]
-    [SerializeField] private Vector2 size;
+    [SerializeField] private Vector2 size = Vector2.one;
     [SerializeField] private Vector2 cannonSize = new Vector2(2f, 0.5f);
 
     [Header("Canion Data")]
@@ -53,55 +54,55 @@ public class Tank
     public float CannonRotation => cannonRotation;
     public Vector2 TankSize => size;
 
-    public void CheckInput(float deltaTime)
-    {
-        if (Input.GetKey(KeyCode.LeftArrow))
-            velocity += Vector2.left * (acceleration * deltaTime);
-        else if (Input.GetKey(KeyCode.RightArrow))
-            velocity += Vector2.right * (acceleration * deltaTime);
-
-        if (Input.GetKey(KeyCode.I))
-            cannonRotation += acceleration * 2f * deltaTime;
-        else if (Input.GetKey(KeyCode.O))
-            cannonRotation -= acceleration * 2f * deltaTime;
-
-        cannonRotation = Mathf.Clamp(cannonRotation, 0f, 180f);
-    }
+    public abstract void CheckInput(float deltaTime);
 
     public void Integrate(float deltaTime, float gravity)
     {
         if (!isGrounded)
+        {
             velocity += Vector2.down * (gravity * deltaTime);
-        else if (velocity.y < 0)
-            velocity.y = 0;
+        }
+        else
+        {
+            float frictionForce = mass * gravity * friction;
+            float deceleration = frictionForce * deltaTime;
+
+            if (!Mathf.Approximately(velocity.x, 0))
+            {
+                float speedX = Mathf.Abs(velocity.x);
+                float newSpeedX = Mathf.Max(0, speedX - deceleration);
+                velocity.x = newSpeedX * Mathf.Sign(velocity.x);
+            }
+
+            if (velocity.y < 0) velocity.y = 0;
+        }
 
         position += velocity * deltaTime;
-
         isGrounded = false;
     }
 
-    public void CheckWallCollision(Wall wall)
+    public void CheckWallCollision(Wall wall, float gravity)
     {
         Vector2 wallVec = wall.pointB - wall.pointA;
         float wallLen = wallVec.magnitude;
 
-        if (wallLen < Mathf.Epsilon)
-            return;
+        if (wallLen < Mathf.Epsilon) return;
 
         Vector2 wallDir = wallVec / wallLen;
+        float distanceAlongWall = Vector2.Dot(position - wall.pointA, wallDir);
 
-        float t = Vector2.Dot(position - wall.pointA, wallDir);
-        if (t < -size.x * 0.5f || t > wallLen + size.x * 0.5f)
+        if (distanceAlongWall < -size.x * 0.5f || distanceAlongWall > wallLen + size.x * 0.5f)
             return;
 
         Vector2 normal = new Vector2(-wallDir.y, wallDir.x);
         Vector2 halfSize = size * 0.5f;
         float distToWall = Vector2.Dot(position - wall.pointA, normal);
 
+
         float projectedRadius = Mathf.Abs(halfSize.x * normal.x) + Mathf.Abs(halfSize.y * normal.y);
         float penetration = (projectedRadius + wall.thickness) - Mathf.Abs(distToWall);
 
-        if (penetration < 0 || Mathf.Approximately(penetration, 0))
+        if (penetration <= Mathf.Epsilon)
             return;
 
         float sign = Mathf.Sign(distToWall);
@@ -113,16 +114,22 @@ public class Tank
         {
             Vector2 vNormal = vDotN * n;
             Vector2 vTangent = velocity - vNormal;
-
             float combinedFriction = Mathf.Clamp01((friction + wall.friction) * 0.5f);
-
             velocity = (vTangent * (1.0f - combinedFriction)) - (vNormal * restitution);
 
-            if (n.y > 0.7f)
+            Vector2 weightForce = Vector2.down * (mass * gravity);
+
+            float weightAlongSlope = Vector2.Dot(weightForce, wallDir);
+            Vector2 slidingForce = wallDir * weightAlongSlope;
+
+            velocity += (slidingForce / mass) * Time.fixedDeltaTime;
+
+            float groundThreshold = Mathf.Cos(maxSlopeAngle * Mathf.Deg2Rad);
+            if (n.y > groundThreshold)
             {
                 isGrounded = true;
 
-                if (velocity.sqrMagnitude < Mathf.Epsilon * Mathf.Epsilon)
+                if (velocity.sqrMagnitude < Mathf.Epsilon * Mathf.Epsilon) 
                     velocity = Vector2.zero;
             }
         }
@@ -130,7 +137,7 @@ public class Tank
 
     public void CheckTankCollision(Tank other)
     {
-        if (this == other) 
+        if (this == other)
             return;
 
         Vector2 delta = other.position - this.position;
@@ -162,7 +169,7 @@ public class Tank
             Vector2 relativeVelocity = other.velocity - this.velocity;
             float velAlongNormal = Vector2.Dot(relativeVelocity, normal);
 
-            if (velAlongNormal > 0) 
+            if (velAlongNormal > 0)
                 return;
 
             float e = Mathf.Min(restitution, other.restitution);

@@ -12,7 +12,7 @@ namespace Assets.Code
         [SerializeField] private float radius;
 
         [Header("Scene Objects")]
-        [SerializeField] private Tank[] tanks;
+        public Tank[] tanks;
         [SerializeField] private Wall[] walls;
         [SerializeField] private List<Bullet> bullets;
 
@@ -27,6 +27,11 @@ namespace Assets.Code
             Application.runInBackground = true;
             predictedPoints = new List<Vector2>();
             bulletsToRemove = new List<Bullet>();
+
+            tanks = new Tank[2];
+
+            tanks[0] = new TankA();
+            tanks[1] = new TankB();
         }
 
         private void Update()
@@ -43,7 +48,7 @@ namespace Assets.Code
 
                 foreach (Wall wall in walls)
                 {
-                    tank.CheckWallCollision(wall);
+                    tank.CheckWallCollision(wall, Gravity);
                 }
 
                 foreach (Tank other in tanks)
@@ -153,13 +158,18 @@ namespace Assets.Code
 
         private void OnDrawGizmos()
         {
-            foreach (Tank tank in tanks)
+            if (tanks != null)
             {
-                Gizmos.DrawCube(tank.Position, tank.TankSize);
-                tank.OnDrawGizmos();
-                Gizmos.DrawSphere(tank.CannonTipPosition, 0.3f);
+                Gizmos.color = Color.white;
+                foreach (Tank tank in tanks)
+                {
+                    Gizmos.DrawCube(tank.Position, tank.TankSize);
+                    tank.OnDrawGizmos();
+                    Gizmos.DrawSphere(tank.CannonTipPosition, 0.3f);
+                }
             }
 
+            Gizmos.color = Color.yellow;
             foreach (Wall wall in walls)
                 Gizmos.DrawLine(wall.pointA, wall.pointB);
 
@@ -170,6 +180,7 @@ namespace Assets.Code
                     Gizmos.DrawSphere(vector2, 0.2f);
             }
 
+            Gizmos.color = Color.red;
             foreach (Bullet bullet in bullets)
             {
                 Gizmos.color = Color.red;
