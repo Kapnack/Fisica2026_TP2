@@ -78,11 +78,6 @@ public class Tank
         position += velocity * deltaTime;
 
         isGrounded = false;
-
-        //if (velocity.sqrMagnitude > Mathf.Epsilon)
-        //    velocity -= velocity.normalized * (friction * 10f * deltaTime);
-        //else
-        //    velocity = Vector2.zero;
     }
 
     public void CheckWallCollision(Wall wall)
