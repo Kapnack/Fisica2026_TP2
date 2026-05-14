@@ -385,17 +385,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Code.Simulation
   predictionMaxTime: 2
-  radius: 0.2
+  bullets:
+  - position: {x: -3, y: 4.6}
+    radius: 0.3
+    velocity: {x: 0, y: 0}
+    restitution: 1
+    mass: 1
+    friction: 0
+    aceleration: 0.3
+    acelerationDir: {x: 0, y: 0}
+    isGrounded: 0
+  - position: {x: 3, y: 0}
+    radius: 0.3
+    velocity: {x: 0, y: 0}
+    restitution: 1
+    mass: 1
+    friction: 0
+    aceleration: 0.3
+    acelerationDir: {x: 0, y: 0}
+    isGrounded: 0
   tanks:
-  - acceleration: 24.2
-    position: {x: -3.96, y: 0}
+  - acceleration: 30
+    position: {x: 0, y: 0}
     velocity: {x: 0, y: 0}
     size: {x: 1, y: 1}
-    cannonSize: {x: 2, y: 0.5}
-    cannonRotation: 20.05
-    canionForce: 0
-    shoot: 0
-    restitution: -0.36
+    cannonSize: {x: 0.9, y: 0.3}
+    restitution: 0.8
     mass: 1
     friction: 0.3
   - acceleration: 30
@@ -403,26 +418,22 @@ MonoBehaviour:
     velocity: {x: 0, y: 0}
     size: {x: 1, y: 1}
     cannonSize: {x: 2, y: 0.5}
-    cannonRotation: 0
-    canionForce: 0
-    shoot: 0
-    restitution: 0
+    restitution: 0.8
     mass: 1
     friction: 0.3
   walls:
   - pointB: {x: -5, y: -3}
     pointA: {x: 5, y: -3}
     thickness: 1
-    friction: 0
+    friction: 1
   - pointB: {x: 5, y: 0}
     pointA: {x: 5, y: -3}
     thickness: 1
-    friction: 0
+    friction: 1
   - pointB: {x: -5, y: 0}
     pointA: {x: -5, y: -3}
     thickness: 1
-    friction: 0
-  bullets: []
+    friction: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

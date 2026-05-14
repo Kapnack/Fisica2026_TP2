@@ -4,83 +4,156 @@ using UnityEngine;
 [Serializable]
 public class Tank
 {
-    [SerializeField] private float aceleration = 30.0f;
+    [Header("Movement")]
+    [SerializeField] private float acceleration = 30.0f;
     [SerializeField] private Vector2 position;
-    public Vector2 Position => position;
-    public Vector2 Size => size;
-    public float fallSpeed;
-
     [SerializeField] private Vector2 velocity;
+
+    [Header("Dimensions")]
     [SerializeField] private Vector2 size;
+    [SerializeField] private Vector2 cannonSize = new Vector2(2f, 0.5f);
+
+    [Header("Canion Data")]
+    [SerializeField] public float cannonRotation = 0.0f;
+    [SerializeField] public float canionForce = 0.0f;
+
+     public bool shoot = false;
+
+    public Vector2 CanionDir
+    {
+        get
+        {
+            float radians = cannonRotation * Mathf.Deg2Rad;
+
+            return new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+        }
+    }
+
+    public Vector2 CannonTipPosition
+    {
+        get
+        {
+            float rad = cannonRotation * Mathf.Deg2Rad;
+            Vector2 direction = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
+
+            return position + direction * cannonSize.x;
+        }
+    }
+
+
+    [Header("Physics")]
     [SerializeField] private float restitution = 0.8f;
     [SerializeField] private float mass = 1f;
     [SerializeField] private float friction = 0.3f;
 
-    private float canionRotation = 0.0f;
+    private bool isGrounded = false;
+
+    public Vector2 Position => position;
+    public Vector2 CannonSize => cannonSize;
+    public float CannonRotation => cannonRotation;
+    public Vector2 TankSize => size;
 
     public void CheckInput(float deltaTime)
     {
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            velocity += Vector2.left * deltaTime;
-        }
-        else if (Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            velocity += Vector2.right * deltaTime;
-        }
+        if (Input.GetKey(KeyCode.LeftArrow))
+            velocity += Vector2.left * (acceleration * deltaTime);
+        else if (Input.GetKey(KeyCode.RightArrow))
+            velocity += Vector2.right * (acceleration * deltaTime);
 
-        if (Input.GetKeyDown(KeyCode.I))
-        {
-            canionRotation -= aceleration * deltaTime;
-        }
-        else if (Input.GetKeyDown(KeyCode.O))
-        {
-            canionRotation += aceleration * deltaTime;
-        }
+        if (Input.GetKey(KeyCode.I))
+            cannonRotation += acceleration * 2f * deltaTime;
+        else if (Input.GetKey(KeyCode.O))
+            cannonRotation -= acceleration * 2f * deltaTime;
+
+        cannonRotation = Mathf.Clamp(cannonRotation, 0f, 180f);
     }
 
     public void Integrate(float deltaTime, float gravity)
     {
-        fallSpeed += gravity * Time.deltaTime;
+        if (!isGrounded)
+            velocity += Vector2.down * (gravity * deltaTime);
+        else if (velocity.y < 0)
+            velocity.y = 0;
 
-        Vector2 verticalVelocity = Vector2.down * fallSpeed;
+        position += velocity * deltaTime;
 
-        position += (velocity + verticalVelocity) * Time.deltaTime;
+        isGrounded = false;
+
+        //if (velocity.sqrMagnitude > Mathf.Epsilon)
+        //    velocity -= velocity.normalized * (friction * 10f * deltaTime);
+        //else
+        //    velocity = Vector2.zero;
     }
 
     public void CheckWallCollision(Wall wall)
     {
-        Vector2 wallVector = wall.pointB - wall.pointA;
-        float wallVectorSqrMag = Vector2.SqrMagnitude(wallVector);
+        Vector2 wallVec = wall.pointB - wall.pointA;
+        float wallLen = wallVec.magnitude;
 
-        if (wallVectorSqrMag <= Mathf.Epsilon)
+        if (wallLen < Mathf.Epsilon) 
             return;
 
-        Vector2 ballPointAVector = position - wall.pointA;
+        Vector2 wallDir = wallVec / wallLen;
 
-        float ballWallInterpolation = Vector2.Dot(ballPointAVector, wallVector) / wallVectorSqrMag;
-        ballWallInterpolation = Mathf.Clamp01(ballWallInterpolation);
-
-        Vector2 closestPointToWall = wall.pointA + wallVector * ballWallInterpolation;
-
-        Vector2 delta = position - closestPointToWall;
-        float dist = delta.magnitude;
-
-        float minDist = wall.thickness + size.y;
-
-        if (dist > minDist || dist < Mathf.Epsilon)
+        float t = Vector2.Dot(position - wall.pointA, wallDir);
+        if (t < -size.x * 0.5f || t > wallLen + size.x * 0.5f) 
             return;
 
-        Vector2 normal = delta / dist;
+        Vector2 normal = new Vector2(-wallDir.y, wallDir.x);
+        Vector2 halfSize = size * 0.5f;
+        float distToWall = Vector2.Dot(position - wall.pointA, normal);
 
-        position = closestPointToWall + normal * minDist;
+        float projectedRadius = Mathf.Abs(halfSize.x * normal.x) + Mathf.Abs(halfSize.y * normal.y);
+        float penetration = (projectedRadius + wall.thickness) - Mathf.Abs(distToWall);
 
-        Vector2 vNormal = Vector2.Dot(velocity, normal) * normal;
-        Vector2 vTangent = velocity - vNormal;
+        if (penetration < 0 || Mathf.Approximately(penetration, 0)) 
+            return;
 
-        vNormal = -vNormal * restitution;
-        vTangent *= (1.0f - friction);
+        float sign = Mathf.Sign(distToWall);
+        Vector2 n = normal * sign;
+        position += n * penetration;
 
-        velocity = vNormal + vTangent;
+        float vDotN = Vector2.Dot(velocity, n);
+        if (vDotN < 0)
+        {
+            Vector2 vNormal = vDotN * n;
+            Vector2 vTangent = velocity - vNormal;
+
+            float combinedFriction = Mathf.Clamp01((friction + wall.friction) * 0.5f);
+
+            velocity = (vTangent * (1.0f - combinedFriction)) - (vNormal * restitution);
+
+            if (n.y > 0.7f)
+            {
+                isGrounded = true;
+
+                if (velocity.sqrMagnitude < Mathf.Epsilon * Mathf.Epsilon) 
+                    velocity = Vector2.zero;
+            }
+        }
+    }
+
+    public void OnDrawGizmos()
+    {
+        float rad = cannonRotation * Mathf.Deg2Rad;
+        Vector2 direction = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
+
+        Vector2 cannonCenter = position + direction * (cannonSize.x * 0.5f);
+
+        Gizmos.color = Color.green;
+
+        Matrix4x4 oldMatrix = Gizmos.matrix;
+
+        Gizmos.matrix = Matrix4x4.TRS(
+            new Vector3(cannonCenter.x, cannonCenter.y, 0),
+            Quaternion.Euler(0, 0, cannonRotation),
+            Vector3.one
+        );
+
+        Gizmos.DrawWireCube(Vector3.zero, new Vector3(cannonSize.x, cannonSize.y, 0.1f));
+
+        Gizmos.matrix = oldMatrix;
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(position, position + direction * cannonSize.x);
     }
 }
