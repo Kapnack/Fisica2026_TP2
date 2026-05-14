@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Assets.Code
@@ -44,6 +45,13 @@ namespace Assets.Code
                 {
                     tank.CheckWallCollision(wall);
                 }
+
+                foreach (Tank other in tanks)
+                {
+                    if (!tank.Equals(other))
+                        tank.CheckTankCollision(other);
+                }
+
 
                 predictedPoints.Add(PredictHitPoint(tank.CannonTipPosition + tank.CanionDir * radius, tank.canionForce, tank.CanionDir, Gravity, predictionMaxTime, deltaTime));
 
@@ -101,7 +109,7 @@ namespace Assets.Code
 
                 foreach (Tank tank in tanks)
                 {
-                    if (sim.CheckTankCollision(tank, out Vector2 hitPoint))
+                    if (sim.TestTankCollision(tank, out Vector2 hitPoint))
                         return hitPoint;
                 }
 

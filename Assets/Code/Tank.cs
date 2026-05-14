@@ -17,7 +17,7 @@ public class Tank
     [SerializeField] public float cannonRotation = 0.0f;
     [SerializeField] public float canionForce = 0.0f;
 
-     public bool shoot = false;
+    public bool shoot = false;
 
     public Vector2 CanionDir
     {
@@ -85,13 +85,13 @@ public class Tank
         Vector2 wallVec = wall.pointB - wall.pointA;
         float wallLen = wallVec.magnitude;
 
-        if (wallLen < Mathf.Epsilon) 
+        if (wallLen < Mathf.Epsilon)
             return;
 
         Vector2 wallDir = wallVec / wallLen;
 
         float t = Vector2.Dot(position - wall.pointA, wallDir);
-        if (t < -size.x * 0.5f || t > wallLen + size.x * 0.5f) 
+        if (t < -size.x * 0.5f || t > wallLen + size.x * 0.5f)
             return;
 
         Vector2 normal = new Vector2(-wallDir.y, wallDir.x);
@@ -101,7 +101,7 @@ public class Tank
         float projectedRadius = Mathf.Abs(halfSize.x * normal.x) + Mathf.Abs(halfSize.y * normal.y);
         float penetration = (projectedRadius + wall.thickness) - Mathf.Abs(distToWall);
 
-        if (penetration < 0 || Mathf.Approximately(penetration, 0)) 
+        if (penetration < 0 || Mathf.Approximately(penetration, 0))
             return;
 
         float sign = Mathf.Sign(distToWall);
@@ -122,9 +122,62 @@ public class Tank
             {
                 isGrounded = true;
 
-                if (velocity.sqrMagnitude < Mathf.Epsilon * Mathf.Epsilon) 
+                if (velocity.sqrMagnitude < Mathf.Epsilon * Mathf.Epsilon)
                     velocity = Vector2.zero;
             }
+        }
+    }
+
+    public void CheckTankCollision(Tank other)
+    {
+        if (this == other) 
+            return;
+
+        Vector2 delta = other.position - this.position;
+        Vector2 combinedHalfSize = (this.size + other.size) * 0.5f;
+
+        float overlapX = combinedHalfSize.x - Mathf.Abs(delta.x);
+        float overlapY = combinedHalfSize.y - Mathf.Abs(delta.y);
+
+        if (overlapX > 0 && overlapY > 0)
+        {
+            Vector2 normal;
+            float penetration;
+
+            if (overlapX < overlapY)
+            {
+                penetration = overlapX;
+                normal = new Vector2(Mathf.Sign(delta.x), 0);
+            }
+            else
+            {
+                penetration = overlapY;
+                normal = new Vector2(0, Mathf.Sign(delta.y));
+            }
+
+            Vector2 correction = normal * (penetration * 0.5f);
+            position -= correction;
+            other.position += correction;
+
+            Vector2 relativeVelocity = other.velocity - this.velocity;
+            float velAlongNormal = Vector2.Dot(relativeVelocity, normal);
+
+            if (velAlongNormal > 0) 
+                return;
+
+            float e = Mathf.Min(restitution, other.restitution);
+            float j = -(1 + e) * velAlongNormal;
+            j /= (1 / this.mass) + (1 / other.mass);
+
+            Vector2 impulse = j * normal;
+            this.velocity -= impulse * (1 / this.mass);
+            other.velocity += impulse * (1 / other.mass);
+
+            if (normal.y > 0.5f)
+                other.isGrounded = true;
+
+            if (normal.y < -0.5f)
+                this.isGrounded = true;
         }
     }
 

@@ -190,6 +190,28 @@ public class Bullet
 
         ApplyBallFriction(other, relativeVelocity, normal, impulseCorrecction, denom);
     }
+    public bool TestTankCollision(Tank tank, out Vector2 hitPoint)
+    {
+        hitPoint = Vector2.zero;
+        Vector2 halfSize = tank.TankSize * 0.5f;
+        Vector2 min = tank.Position - halfSize;
+        Vector2 max = tank.Position + halfSize;
+
+        Vector2 closest = new Vector2(
+            Mathf.Clamp(position.x, min.x, max.x),
+            Mathf.Clamp(position.y, min.y, max.y)
+        );
+
+        Vector2 delta = position - closest;
+        float distSqr = delta.sqrMagnitude;
+
+        if (distSqr <= radius * radius)
+        {
+            hitPoint = closest;
+            return true;
+        }
+        return false;
+    }
 
     private void ApplyBallFriction(Bullet other, Vector2 relativeVelocity, Vector2 normal, float impulseCorrecction, float denom)
     {
