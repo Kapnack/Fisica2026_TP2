@@ -41,6 +41,8 @@ public abstract class Tank
         }
     }
 
+    public Vector2 CannonCenter => position + CanionDir * (cannonSize.x * 0.5f);
+
 
     [Header("Physics")]
     [SerializeField] private float restitution = 0.8f;
@@ -86,7 +88,8 @@ public abstract class Tank
         Vector2 wallVec = wall.pointB - wall.pointA;
         float wallLen = wallVec.magnitude;
 
-        if (wallLen < Mathf.Epsilon) return;
+        if (wallLen < Mathf.Epsilon)
+            return;
 
         Vector2 wallDir = wallVec / wallLen;
         float distanceAlongWall = Vector2.Dot(position - wall.pointA, wallDir);
@@ -97,7 +100,6 @@ public abstract class Tank
         Vector2 normal = new Vector2(-wallDir.y, wallDir.x);
         Vector2 halfSize = size * 0.5f;
         float distToWall = Vector2.Dot(position - wall.pointA, normal);
-
 
         float projectedRadius = Mathf.Abs(halfSize.x * normal.x) + Mathf.Abs(halfSize.y * normal.y);
         float penetration = (projectedRadius + wall.thickness) - Mathf.Abs(distToWall);
@@ -129,7 +131,7 @@ public abstract class Tank
             {
                 isGrounded = true;
 
-                if (velocity.sqrMagnitude < Mathf.Epsilon * Mathf.Epsilon) 
+                if (velocity.sqrMagnitude < Mathf.Epsilon * Mathf.Epsilon)
                     velocity = Vector2.zero;
             }
         }
