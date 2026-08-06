@@ -81,8 +81,13 @@ namespace Assets.Code
                 bullet.Integrate(deltaTime, Gravity);
 
                 foreach (Tank tank in tanks)
+                {
                     if (bullet.CheckTankCollision(tank, out Vector2 _))
                         bulletsToRemove.Add(bullet);
+
+                    if (bullet.CheckCannonCollision(tank, out Vector2 _))
+                        bulletsToRemove.Add(bullet);
+                }
 
                 foreach (Wall wall in walls)
                     bullet.CheckWallCollision(wall);
@@ -102,31 +107,34 @@ namespace Assets.Code
 
         public Vector2 PredictHitPoint(Vector2 sartingPos, float aceleration, Vector2 dir, float gravity, float predictionMaxTime, float deltaTime)
         {
-            Bullet sim = new Bullet();
+            Bullet bulletSim = new Bullet();
             float time = 0f;
 
-            sim.SetStartingPos(sartingPos);
-            sim.Impulse(aceleration, dir);
+            bulletSim.SetStartingPos(sartingPos);
+            bulletSim.Impulse(aceleration, dir);
 
             while (time < predictionMaxTime)
             {
-                sim.Integrate(deltaTime, gravity);
+                bulletSim.Integrate(deltaTime, gravity);
 
                 foreach (Tank tank in tanks)
                 {
-                    if (sim.TestTankCollision(tank, out Vector2 hitPoint))
+                    if (bulletSim.TestTankCollision(tank, out Vector2 hitPoint))
                         return hitPoint;
+
+                    if (bulletSim.TestCannonCollision(tank, out Vector2 cannonHitPoint))
+                        return cannonHitPoint;
                 }
 
                 foreach (Wall wall in walls)
                 {
-                    Vector2 closestPoint = sim.GetClosestPointOnWall(wall);
+                    Vector2 closestPoint = bulletSim.GetClosestPointOnWall(wall);
 
-                    Vector2 midPoint = (sim.PreviousPosition + sim.Position) * 0.5f;
+                    Vector2 midPoint = (bulletSim.PreviousPosition + bulletSim.Position) * 0.5f;
 
                     Vector2 delta = midPoint - closestPoint;
                     float dist = delta.magnitude;
-                    float minDist = wall.thickness + sim.Radius;
+                    float minDist = wall.thickness + bulletSim.Radius;
 
                     if (dist <= minDist && dist > Mathf.Epsilon)
                     {
@@ -138,10 +146,10 @@ namespace Assets.Code
 
                 foreach (Bullet other in bullets)
                 {
-                    Vector2 midPoint = (sim.PreviousPosition + sim.Position) * 0.5f;
+                    Vector2 midPoint = (bulletSim.PreviousPosition + bulletSim.Position) * 0.5f;
 
                     float dist = Vector2.Distance(midPoint, other.Position);
-                    float minDist = sim.Radius + other.Radius;
+                    float minDist = bulletSim.Radius + other.Radius;
 
                     if (dist <= minDist)
                     {
@@ -153,7 +161,7 @@ namespace Assets.Code
                 time += deltaTime;
             }
 
-            return sim.Position;
+            return bulletSim.Position;
         }
 
         private void OnDrawGizmos()
