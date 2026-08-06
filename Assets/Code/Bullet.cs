@@ -176,6 +176,99 @@ public class Bullet
         return true;
     }
 
+    public bool CheckCannonCollision(Tank tank, out Vector2 hitPoint)
+    {
+        hitPoint = Vector2.zero;
+
+        Vector2 cannonCenter = tank.CannonCenter;
+        float angle = -tank.CannonRotation * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(angle);
+        float sin = Mathf.Sin(angle);
+
+        Vector2 localPos = Position - cannonCenter;
+        Vector2 rotatedPos = new Vector2(
+            localPos.x * cos - localPos.y * sin,
+            localPos.x * sin + localPos.y * cos
+        );
+
+        Vector2 halfSize = tank.CannonSize * 0.5f;
+        Vector2 closestLocal = new Vector2(
+            Mathf.Clamp(rotatedPos.x, -halfSize.x, halfSize.x),
+            Mathf.Clamp(rotatedPos.y, -halfSize.y, halfSize.y)
+        );
+
+        Vector2 deltaLocal = rotatedPos - closestLocal;
+        float distSqr = deltaLocal.sqrMagnitude;
+
+        if (distSqr > radius * radius)
+            return false;
+
+        // Volvemos a rotar el punto más cercano al espacio del mundo para poder
+        // sacar la normal real y reposicionar/reflejar la bala.
+        float worldAngle = tank.CannonRotation * Mathf.Deg2Rad;
+        float cosW = Mathf.Cos(worldAngle);
+        float sinW = Mathf.Sin(worldAngle);
+
+        Vector2 closestWorld = cannonCenter + new Vector2(
+            closestLocal.x * cosW - closestLocal.y * sinW,
+            closestLocal.x * sinW + closestLocal.y * cosW
+        );
+
+        Vector2 delta = Position - closestWorld;
+        float dist = delta.magnitude;
+
+        if (dist < Mathf.Epsilon)
+            return false;
+
+        Vector2 normal = delta / dist;
+
+        Position = closestWorld + normal * radius;
+        velocity = Reflect(velocity, normal, restitution);
+
+        hitPoint = closestWorld;
+
+        return true;
+    }
+
+    public bool TestCannonCollision(Tank tank, out Vector2 hitPoint)
+    {
+        hitPoint = Vector2.zero;
+
+        Vector2 cannonCenter = tank.CannonCenter;
+        float angle = -tank.CannonRotation * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(angle);
+        float sin = Mathf.Sin(angle);
+
+        Vector2 localPos = position - cannonCenter;
+        Vector2 rotatedPos = new Vector2(
+            localPos.x * cos - localPos.y * sin,
+            localPos.x * sin + localPos.y * cos
+        );
+
+        Vector2 halfSize = tank.CannonSize * 0.5f;
+        Vector2 closestLocal = new Vector2(
+            Mathf.Clamp(rotatedPos.x, -halfSize.x, halfSize.x),
+            Mathf.Clamp(rotatedPos.y, -halfSize.y, halfSize.y)
+        );
+
+        Vector2 deltaLocal = rotatedPos - closestLocal;
+        float distSqr = deltaLocal.sqrMagnitude;
+
+        if (distSqr > radius * radius)
+            return false;
+
+        float worldAngle = tank.CannonRotation * Mathf.Deg2Rad;
+        float cosW = Mathf.Cos(worldAngle);
+        float sinW = Mathf.Sin(worldAngle);
+
+        hitPoint = cannonCenter + new Vector2(
+            closestLocal.x * cosW - closestLocal.y * sinW,
+            closestLocal.x * sinW + closestLocal.y * cosW
+        );
+
+        return true;
+    }
+
     private void ResolveBallOverlap(Bullet other, Vector2 normal, float penetration)
     {
         Vector2 correction = normal * (penetration * 0.5f);
